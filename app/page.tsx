@@ -21,6 +21,7 @@ import {
   Instagram,
   Facebook,
   Linkedin,
+  Loader2,
 } from "lucide-react"
 
 type FormData = {
@@ -62,6 +63,7 @@ type FormData = {
 export default function OnboardingForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     nombreCompleto: "",
     cargo: "",
@@ -155,27 +157,75 @@ export default function OnboardingForm() {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleSubmit = () => {
+  // --- FUNCIÓN DE ENVÍO A HUBSPOT INTEGRADA ---
+  const handleSubmit = async () => {
     if (validateStep(5)) {
-      console.log("Form submitted:", formData)
-      setIsSubmitted(true)
+      setIsLoading(true)
+      
+      const portalId = "50931081"
+      const formId = "da6ea758-abbf-4c39-8b6e-822464977ebe"
+      const url = `https://api.hsforms.com/submissions/v3/integration/submit/${portalId}/${formId}`
+
+      const payload = {
+        fields: [
+          { name: "firstname", value: formData.nombreCompleto },
+          { name: "lastname", value: formData.cargo }, // Cargo lo mapeamos a apellido o propiedad custom
+          { name: "email", value: formData.email },
+          { name: "phone", value: formData.telefono },
+          { name: "company", value: formData.nombreMarca },
+          { name: "message", value: `
+            ADN MARCA: ${formData.descripcion}
+            MISION/VALORES: ${formData.misionVisionValores}
+            DIFERENCIADOR: ${formData.elementoDiferenciador}
+            PERSONALIDAD: ${formData.personalidad}
+            COMPETIDORES: ${formData.competidores}
+            OBJETIVOS: ${formData.objetivos.join(", ")} ${formData.otroObjetivo}
+            CLIENTE IDEAL: ${formData.clienteIdeal}
+            PRESUPUESTO ADS: ${formData.presupuestoAds}
+            REDES SOCIALES: ${formData.socialMediaPlatforms.join(", ")}
+            IG: ${formData.instagramUser} / Pass: ${formData.instagramPassword}
+            FB: ${formData.facebookEmail} / Pass: ${formData.facebookPassword}
+            LI: ${formData.linkedinEmail} / Pass: ${formData.linkedinPassword}
+            HORARIO: ${formData.horarioAtencion}
+            DIRECCION: ${formData.direccion}
+            COMENTARIOS: ${formData.comentarios}
+          `},
+        ],
+        context: {
+          pageUri: window.location.href,
+          pageName: document.title
+        }
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+
+        if (response.ok) {
+          setIsSubmitted(true)
+        } else {
+          alert("Hubo un error al enviar. Por favor, revisa que los datos sean correctos.")
+        }
+      } catch (error) {
+        console.error("Error de conexión:", error)
+        alert("Error de red. Intenta de nuevo.")
+      } finally {
+        setIsLoading(false)
+      }
     }
   }
 
   const getStepIcon = (step: number) => {
     switch (step) {
-      case 1:
-        return User
-      case 2:
-        return Building2
-      case 3:
-        return Target
-      case 4:
-        return Globe
-      case 5:
-        return FileCheck
-      default:
-        return User
+      case 1: return User
+      case 2: return Building2
+      case 3: return Target
+      case 4: return Globe
+      case 5: return FileCheck
+      default: return User
     }
   }
 
@@ -204,12 +254,7 @@ export default function OnboardingForm() {
         <footer className="py-6 text-center">
           <p className="text-sm text-slate-500">
             © 2026 Swipe. Todos los derechos reservados |{" "}
-            <a
-              href="https://www.swipe.com.do"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline hover:text-slate-700 transition-colors"
-            >
+            <a href="https://www.swipe.com.do" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-slate-700 transition-colors">
               www.swipe.com.do
             </a>
           </p>
@@ -227,30 +272,25 @@ export default function OnboardingForm() {
           <div className="text-center mb-8">
             <div className="flex justify-center mb-6">
               <img
-                src="/images/logotipo-principal.png"
+                src="/icon.png"
                 alt="Swipe Logo"
                 className="max-h-[80px] w-auto object-contain"
               />
             </div>
             <h1 className="text-4xl font-bold text-slate-900 mb-3 text-balance">🚀 Formulario de Onboarding</h1>
             <p className="text-slate-700 leading-relaxed max-w-2xl mx-auto text-pretty">
-              ¡Hola! Bienvenido a la familia de Swipe. Estamos muy emocionados de empezar a trabajar con tu marca. Este
-              formulario es el primer paso para construir una estrategia sólida y personalizada.
+              ¡Hola! Bienvenido a la familia de Swipe. Estamos muy emocionados de empezar a trabajar con tu marca.
             </p>
           </div>
 
-          {/* Progress Bar */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-slate-900">
-                Paso {currentStep} de {totalSteps}
-              </span>
+              <span className="text-sm font-medium text-slate-900">Paso {currentStep} de {totalSteps}</span>
               <span className="text-sm font-medium text-slate-900">{Math.round(progressPercentage)}%</span>
             </div>
             <Progress value={progressPercentage} className="h-2" />
           </div>
 
-          {/* Form Card */}
           <Card className="border border-slate-200 shadow-lg rounded-xl bg-white">
             <CardHeader className="rounded-t-xl bg-gradient-to-r from-blue-600 to-blue-700">
               <div className="flex items-center gap-3">
@@ -265,554 +305,138 @@ export default function OnboardingForm() {
                     {currentStep === 4 && "Ecosistema Digital"}
                     {currentStep === 5 && "Cierre Operativo"}
                   </CardTitle>
-                  <CardDescription className="text-white/80">
-                    Completa todos los campos requeridos para continuar
-                  </CardDescription>
+                  <CardDescription className="text-white/80">Completa todos los campos requeridos</CardDescription>
                 </div>
               </div>
             </CardHeader>
 
             <CardContent className="pt-8 pb-6">
-              {/* Step 1: Datos de Identificación */}
               {currentStep === 1 && (
-                <div className="space-y-6">
+                <div className="space-y-6 text-slate-900">
                   <div className="space-y-2">
-                    <Label htmlFor="nombreCompleto" className="text-slate-700 dark:text-slate-200">
-                      Nombre completo <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="nombreCompleto"
-                      placeholder="Ej: Juan Pérez"
-                      value={formData.nombreCompleto}
-                      onChange={(e) => updateFormData("nombreCompleto", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="nombreCompleto">Nombre completo <span className="text-red-500">*</span></Label>
+                    <Input id="nombreCompleto" value={formData.nombreCompleto} onChange={(e) => updateFormData("nombreCompleto", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="cargo" className="text-slate-700 dark:text-slate-200">
-                      Cargo en la empresa <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="cargo"
-                      placeholder="Ej: CEO, Gerente de Marketing, Dueño"
-                      value={formData.cargo}
-                      onChange={(e) => updateFormData("cargo", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="cargo">Cargo en la empresa <span className="text-red-500">*</span></Label>
+                    <Input id="cargo" value={formData.cargo} onChange={(e) => updateFormData("cargo", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-slate-700 dark:text-slate-200">
-                      Correo electrónico <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="ejemplo@empresa.com"
-                      value={formData.email}
-                      onChange={(e) => updateFormData("email", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="email">Correo electrónico <span className="text-red-500">*</span></Label>
+                    <Input id="email" type="email" value={formData.email} onChange={(e) => updateFormData("email", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="telefono" className="text-slate-700 dark:text-slate-200">
-                      Teléfono / WhatsApp <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="telefono"
-                      placeholder="Ej: +1 809 000 0000"
-                      value={formData.telefono}
-                      onChange={(e) => updateFormData("telefono", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="telefono">Teléfono / WhatsApp <span className="text-red-500">*</span></Label>
+                    <Input id="telefono" value={formData.telefono} onChange={(e) => updateFormData("telefono", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
                 </div>
               )}
 
-              {/* Step 2: ADN de Marca */}
               {currentStep === 2 && (
-                <div className="space-y-6">
+                <div className="space-y-6 text-slate-900">
                   <div className="space-y-2">
-                    <Label htmlFor="nombreMarca" className="text-slate-700 dark:text-slate-200">
-                      Nombre de la marca <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="nombreMarca"
-                      placeholder="Ej: Swipe Agency"
-                      value={formData.nombreMarca}
-                      onChange={(e) => updateFormData("nombreMarca", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="nombreMarca">Nombre de la marca <span className="text-red-500">*</span></Label>
+                    <Input id="nombreMarca" value={formData.nombreMarca} onChange={(e) => updateFormData("nombreMarca", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="descripcion" className="text-slate-700 dark:text-slate-200">
-                      Descripción de lo que hacen <span className="text-red-500">*</span>
-                    </Label>
-                    <Textarea
-                      id="descripcion"
-                      placeholder="Ej: Somos una empresa que se dedica al sector automotriz, especializada en ventas de repuestos."
-                      value={formData.descripcion}
-                      onChange={(e) => updateFormData("descripcion", e.target.value)}
-                      className="rounded-xl min-h-[100px]"
-                    />
+                    <Label htmlFor="descripcion">Descripción de lo que hacen <span className="text-red-500">*</span></Label>
+                    <Textarea id="descripcion" value={formData.descripcion} onChange={(e) => updateFormData("descripcion", e.target.value)} className="rounded-xl min-h-[100px] border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="misionVisionValores" className="text-slate-700 dark:text-slate-200">
-                      Misión, Visión y Valores <span className="text-red-500">*</span>
-                    </Label>
-                    <Textarea
-                      id="misionVisionValores"
-                      placeholder="Ej: Nuestra misión es liderar el mercado con honestidad..."
-                      value={formData.misionVisionValores}
-                      onChange={(e) => updateFormData("misionVisionValores", e.target.value)}
-                      className="rounded-xl min-h-[100px]"
-                    />
+                    <Label htmlFor="misionVisionValores">Misión, Visión y Valores <span className="text-red-500">*</span></Label>
+                    <Textarea id="misionVisionValores" value={formData.misionVisionValores} onChange={(e) => updateFormData("misionVisionValores", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="elementoDiferenciador" className="text-slate-700 dark:text-slate-200">
-                      Elemento diferenciador <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="elementoDiferenciador"
-                      placeholder="Ej: Ofrecemos garantía de por vida y atención 24/7."
-                      value={formData.elementoDiferenciador}
-                      onChange={(e) => updateFormData("elementoDiferenciador", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="elementoDiferenciador">Elemento diferenciador <span className="text-red-500">*</span></Label>
+                    <Input id="elementoDiferenciador" value={formData.elementoDiferenciador} onChange={(e) => updateFormData("elementoDiferenciador", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="personalidad" className="text-slate-700 dark:text-slate-200">
-                      Personalidad de marca (3 adjetivos) <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="personalidad"
-                      placeholder="Ej: Juvenil, Técnica, Disruptiva"
-                      value={formData.personalidad}
-                      onChange={(e) => updateFormData("personalidad", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="personalidad">Personalidad de marca <span className="text-red-500">*</span></Label>
+                    <Input id="personalidad" value={formData.personalidad} onChange={(e) => updateFormData("personalidad", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="competidores" className="text-slate-700 dark:text-slate-200">
-                      Principales competidores <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="competidores"
-                      placeholder="Ej: Empresa X, Perfil de Instagram @competidor"
-                      value={formData.competidores}
-                      onChange={(e) => updateFormData("competidores", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="competidores">Principales competidores <span className="text-red-500">*</span></Label>
+                    <Input id="competidores" value={formData.competidores} onChange={(e) => updateFormData("competidores", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
                 </div>
               )}
 
-              {/* Step 3: Estrategia y Objetivos */}
               {currentStep === 3 && (
-                <div className="space-y-6">
+                <div className="space-y-6 text-slate-900">
                   <div className="space-y-3">
-                    <Label className="text-slate-700 dark:text-slate-200">
-                      Objetivos principales <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="space-y-3">
-                      {["Más ventas", "Seguidores", "Posicionamiento", "Imagen visual", "Otro"].map((objetivo) => (
-                        <div key={objetivo} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={objetivo}
-                            checked={formData.objetivos.includes(objetivo)}
-                            onCheckedChange={() => toggleObjective(objetivo)}
-                            className="rounded"
-                          />
-                          <Label
-                            htmlFor={objetivo}
-                            className="text-sm font-normal cursor-pointer text-slate-700 dark:text-slate-200"
-                          >
-                            {objetivo}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
+                    <Label>Objetivos principales <span className="text-red-500">*</span></Label>
+                    {["Más ventas", "Seguidores", "Posicionamiento", "Imagen visual", "Otro"].map((objetivo) => (
+                      <div key={objetivo} className="flex items-center space-x-2">
+                        <Checkbox id={objetivo} checked={formData.objetivos.includes(objetivo)} onCheckedChange={() => toggleObjective(objetivo)} />
+                        <Label htmlFor={objetivo} className="font-normal cursor-pointer">{objetivo}</Label>
+                      </div>
+                    ))}
                     {formData.objetivos.includes("Otro") && (
-                      <div className="space-y-2 mt-4 pl-6 border-l-2 border-blue-500">
-                        <Label htmlFor="otroObjetivo" className="text-slate-700 dark:text-slate-200">
-                          Por favor, especifica tu otro objetivo <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="otroObjetivo"
-                          placeholder="Describe tu objetivo personalizado..."
-                          value={formData.otroObjetivo}
-                          onChange={(e) => updateFormData("otroObjetivo", e.target.value)}
-                          className="rounded-xl"
-                        />
-                      </div>
+                      <Input placeholder="Especifique..." value={formData.otroObjetivo} onChange={(e) => updateFormData("otroObjetivo", e.target.value)} className="mt-2 rounded-xl border-slate-300" />
                     )}
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="clienteIdeal" className="text-slate-700 dark:text-slate-200">
-                      Cliente ideal <span className="text-red-500">*</span>
-                    </Label>
-                    <Textarea
-                      id="clienteIdeal"
-                      placeholder="Ej: Hombres de 25-40 años interesados en tecnología que viven en Madrid."
-                      value={formData.clienteIdeal}
-                      onChange={(e) => updateFormData("clienteIdeal", e.target.value)}
-                      className="rounded-xl min-h-[100px]"
-                    />
+                    <Label htmlFor="clienteIdeal">Cliente ideal <span className="text-red-500">*</span></Label>
+                    <Textarea id="clienteIdeal" value={formData.clienteIdeal} onChange={(e) => updateFormData("clienteIdeal", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="materialGrafico" className="text-slate-700 dark:text-slate-200">
-                      Material gráfico (Link Drive/Dropbox)
-                    </Label>
-                    <Input
-                      id="materialGrafico"
-                      placeholder="pega aquí tu enlace de Google Drive o Dropbox"
-                      value={formData.materialGrafico}
-                      onChange={(e) => updateFormData("materialGrafico", e.target.value)}
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="presupuestoAds" className="text-slate-700 dark:text-slate-200">
-                      Presupuesto mensual para Ads <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="presupuestoAds"
-                      placeholder="Ej: 500 USD mensuales"
-                      value={formData.presupuestoAds}
-                      onChange={(e) => updateFormData("presupuestoAds", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="presupuestoAds">Presupuesto mensual para Ads <span className="text-red-500">*</span></Label>
+                    <Input id="presupuestoAds" value={formData.presupuestoAds} onChange={(e) => updateFormData("presupuestoAds", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
                 </div>
               )}
 
-              {/* Step 4: Ecosistema Digital */}
               {currentStep === 4 && (
-                <div className="space-y-6">
-                  <div className="space-y-3">
-                    <Label className="text-slate-700 dark:text-slate-200">
-                      ¿Redes sociales creadas? <span className="text-red-500">*</span>
-                    </Label>
-                    <RadioGroup
-                      value={formData.redesCreadas}
-                      onValueChange={(value) => updateFormData("redesCreadas", value)}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="si" id="si" />
-                        <Label htmlFor="si" className="font-normal cursor-pointer text-slate-700 dark:text-slate-200">
-                          Sí
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="no" id="no" />
-                        <Label htmlFor="no" className="font-normal cursor-pointer text-slate-700 dark:text-slate-200">
-                          No
-                        </Label>
-                      </div>
-                    </RadioGroup>
+                <div className="space-y-6 text-slate-900">
+                  <Label>¿Redes sociales creadas? <span className="text-red-500">*</span></Label>
+                  <RadioGroup value={formData.redesCreadas} onValueChange={(value) => updateFormData("redesCreadas", value)}>
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="si" id="si" /><Label htmlFor="si">Sí</Label></div>
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="no" id="no" /><Label htmlFor="no">No</Label></div>
+                  </RadioGroup>
+
+                  <div className="flex gap-4 justify-center">
+                    <button type="button" onClick={() => toggleSocialPlatform("Instagram")} className={`p-4 rounded-xl border-2 ${formData.socialMediaPlatforms.includes("Instagram") ? "border-purple-500 bg-purple-50" : "border-slate-200"}`}><Instagram className="w-8 h-8" /></button>
+                    <button type="button" onClick={() => toggleSocialPlatform("Facebook")} className={`p-4 rounded-xl border-2 ${formData.socialMediaPlatforms.includes("Facebook") ? "border-blue-600 bg-blue-50" : "border-slate-200"}`}><Facebook className="w-8 h-8" /></button>
                   </div>
 
-                  <div className="space-y-4">
-                    <Label className="text-slate-700 dark:text-slate-200">Credenciales de Redes Sociales</Label>
-                    <p className="text-sm text-slate-500">Selecciona las plataformas y proporciona tus credenciales</p>
-
-                    {/* Social Media Platform Selection */}
-                    <div className="flex gap-4 justify-center">
-                      <button
-                        type="button"
-                        onClick={() => toggleSocialPlatform("Instagram")}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                          formData.socialMediaPlatforms.includes("Instagram")
-                            ? "border-purple-500 bg-purple-50"
-                            : "border-slate-200 bg-white hover:border-purple-300"
-                        }`}
-                      >
-                        <Instagram
-                          className={`w-8 h-8 ${
-                            formData.socialMediaPlatforms.includes("Instagram") ? "text-purple-600" : "text-slate-400"
-                          }`}
-                        />
-                        <span
-                          className={`text-sm font-medium ${
-                            formData.socialMediaPlatforms.includes("Instagram") ? "text-purple-600" : "text-slate-600"
-                          }`}
-                        >
-                          Instagram
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => toggleSocialPlatform("Facebook")}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                          formData.socialMediaPlatforms.includes("Facebook")
-                            ? "border-blue-600 bg-blue-50"
-                            : "border-slate-200 bg-white hover:border-blue-300"
-                        }`}
-                      >
-                        <Facebook
-                          className={`w-8 h-8 ${
-                            formData.socialMediaPlatforms.includes("Facebook") ? "text-blue-600" : "text-slate-400"
-                          }`}
-                        />
-                        <span
-                          className={`text-sm font-medium ${
-                            formData.socialMediaPlatforms.includes("Facebook") ? "text-blue-600" : "text-slate-600"
-                          }`}
-                        >
-                          Facebook
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => toggleSocialPlatform("LinkedIn")}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                          formData.socialMediaPlatforms.includes("LinkedIn")
-                            ? "border-blue-800 bg-blue-50"
-                            : "border-slate-200 bg-white hover:border-blue-300"
-                        }`}
-                      >
-                        <Linkedin
-                          className={`w-8 h-8 ${
-                            formData.socialMediaPlatforms.includes("LinkedIn") ? "text-blue-800" : "text-slate-400"
-                          }`}
-                        />
-                        <span
-                          className={`text-sm font-medium ${
-                            formData.socialMediaPlatforms.includes("LinkedIn") ? "text-blue-800" : "text-slate-600"
-                          }`}
-                        >
-                          LinkedIn
-                        </span>
-                      </button>
+                  {formData.socialMediaPlatforms.includes("Instagram") && (
+                    <div className="grid grid-cols-2 gap-3 p-4 bg-purple-50 rounded-xl">
+                      <Input placeholder="Usuario IG" value={formData.instagramUser} onChange={(e) => updateFormData("instagramUser", e.target.value)} />
+                      <Input type="text" placeholder="Pass IG" value={formData.instagramPassword} onChange={(e) => updateFormData("instagramPassword", e.target.value)} />
                     </div>
-
-                    {/* Instagram Credentials */}
-                    {formData.socialMediaPlatforms.includes("Instagram") && (
-                      <div className="space-y-3 p-4 border border-purple-200 rounded-xl bg-purple-50/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Instagram className="w-5 h-5 text-purple-600" />
-                          <Label className="text-purple-900 font-semibold">Instagram</Label>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label htmlFor="instagramUser" className="text-slate-700 text-sm">
-                              Usuario
-                            </Label>
-                            <Input
-                              id="instagramUser"
-                              placeholder="@usuario_ejemplo"
-                              value={formData.instagramUser}
-                              onChange={(e) => updateFormData("instagramUser", e.target.value)}
-                              className="rounded-xl"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="instagramPassword" className="text-slate-700 text-sm">
-                              Contraseña
-                            </Label>
-                            <Input
-                              id="instagramPassword"
-                              type="text"
-                              placeholder="tu_clave_aquí"
-                              value={formData.instagramPassword}
-                              onChange={(e) => updateFormData("instagramPassword", e.target.value)}
-                              className="rounded-xl"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Facebook Credentials */}
-                    {formData.socialMediaPlatforms.includes("Facebook") && (
-                      <div className="space-y-3 p-4 border border-blue-200 rounded-xl bg-blue-50/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Facebook className="w-5 h-5 text-blue-600" />
-                          <Label className="text-blue-900 font-semibold">Facebook</Label>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label htmlFor="facebookEmail" className="text-slate-700 text-sm">
-                              Correo
-                            </Label>
-                            <Input
-                              id="facebookEmail"
-                              type="email"
-                              placeholder="ejemplo@correo.com"
-                              value={formData.facebookEmail}
-                              onChange={(e) => updateFormData("facebookEmail", e.target.value)}
-                              className="rounded-xl"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="facebookPassword" className="text-slate-700 text-sm">
-                              Contraseña
-                            </Label>
-                            <Input
-                              id="facebookPassword"
-                              type="text"
-                              placeholder="tu_clave_aquí"
-                              value={formData.facebookPassword}
-                              onChange={(e) => updateFormData("facebookPassword", e.target.value)}
-                              className="rounded-xl"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* LinkedIn Credentials */}
-                    {formData.socialMediaPlatforms.includes("LinkedIn") && (
-                      <div className="space-y-3 p-4 border border-blue-300 rounded-xl bg-blue-50/30">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Linkedin className="w-5 h-5 text-blue-800" />
-                          <Label className="text-blue-900 font-semibold">LinkedIn</Label>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label htmlFor="linkedinEmail" className="text-slate-700 text-sm">
-                              Correo
-                            </Label>
-                            <Input
-                              id="linkedinEmail"
-                              type="email"
-                              placeholder="ejemplo@correo.com"
-                              value={formData.linkedinEmail}
-                              onChange={(e) => updateFormData("linkedinEmail", e.target.value)}
-                              className="rounded-xl"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="linkedinPassword" className="text-slate-700 text-sm">
-                              Contraseña
-                            </Label>
-                            <Input
-                              id="linkedinPassword"
-                              type="text"
-                              placeholder="tu_clave_aquí"
-                              value={formData.linkedinPassword}
-                              onChange={(e) => updateFormData("linkedinPassword", e.target.value)}
-                              className="rounded-xl"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="horarioAtencion" className="text-slate-700 dark:text-slate-200">
-                      Horario de atención <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="horarioAtencion"
-                      placeholder="Ej: Lunes a Viernes de 9:00 AM a 6:00 PM"
-                      value={formData.horarioAtencion}
-                      onChange={(e) => updateFormData("horarioAtencion", e.target.value)}
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="direccion" className="text-slate-700 dark:text-slate-200">
-                      Dirección física
-                    </Label>
-                    <Input
-                      id="direccion"
-                      placeholder="Ej: Av. Principal #123, Edificio Swipe, Piso 2"
-                      value={formData.direccion}
-                      onChange={(e) => updateFormData("direccion", e.target.value)}
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="whatsappClientes" className="text-slate-700 dark:text-slate-200">
-                      WhatsApp para clientes
-                    </Label>
-                    <Input
-                      id="whatsappClientes"
-                      placeholder="Ej: ventas@marca.com / +1 829 000 0000"
-                      value={formData.whatsappClientes}
-                      onChange={(e) => updateFormData("whatsappClientes", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="horarioAtencion">Horario de atención <span className="text-red-500">*</span></Label>
+                    <Input id="horarioAtencion" value={formData.horarioAtencion} onChange={(e) => updateFormData("horarioAtencion", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
                 </div>
               )}
 
-              {/* Step 5: Cierre Operativo */}
               {currentStep === 5 && (
-                <div className="space-y-6">
+                <div className="space-y-6 text-slate-900">
                   <div className="space-y-2">
-                    <Label htmlFor="contactoAprobacion" className="text-slate-700 dark:text-slate-200">
-                      Contacto para aprobación <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="contactoAprobacion"
-                      placeholder="Ej: María García - +1 849 000 0000"
-                      value={formData.contactoAprobacion}
-                      onChange={(e) => updateFormData("contactoAprobacion", e.target.value)}
-                      className="rounded-xl"
-                    />
+                    <Label htmlFor="contactoAprobacion">Contacto para aprobación <span className="text-red-500">*</span></Label>
+                    <Input id="contactoAprobacion" value={formData.contactoAprobacion} onChange={(e) => updateFormData("contactoAprobacion", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="comentarios" className="text-slate-700 dark:text-slate-200">
-                      Comentarios adicionales
-                    </Label>
-                    <Textarea
-                      id="comentarios"
-                      placeholder="Ej: Me gustaría enfocar la campaña en el lanzamiento de verano."
-                      value={formData.comentarios}
-                      onChange={(e) => updateFormData("comentarios", e.target.value)}
-                      className="rounded-xl min-h-[120px]"
-                    />
+                    <Label htmlFor="comentarios">Comentarios adicionales</Label>
+                    <Textarea id="comentarios" value={formData.comentarios} onChange={(e) => updateFormData("comentarios", e.target.value)} className="rounded-xl border-slate-300" />
                   </div>
                 </div>
               )}
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-                <Button
-                  onClick={handleBack}
-                  disabled={currentStep === 1}
-                  variant="outline"
-                  className="rounded-xl bg-transparent border-slate-300 hover:bg-slate-50"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Anterior
+              <div className="flex justify-between pt-10">
+                <Button variant="outline" onClick={handleBack} disabled={currentStep === 1 || isLoading} className="rounded-xl border-slate-300">
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Anterior
                 </Button>
-
                 {currentStep < totalSteps ? (
-                  <Button
-                    onClick={handleNext}
-                    disabled={!validateStep(currentStep)}
-                    className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Siguiente
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                  <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8">
+                    Siguiente <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={!validateStep(5)}
-                    className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Enviar
-                    <CheckCircle2 className="w-4 h-4 ml-2" />
+                  <Button onClick={handleSubmit} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8">
+                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando...</> : "Finalizar Onboarding"}
                   </Button>
                 )}
               </div>
@@ -820,19 +444,6 @@ export default function OnboardingForm() {
           </Card>
         </div>
       </div>
-      <footer className="py-6 text-center">
-        <p className="text-sm text-slate-500">
-          © 2026 Swipe. Todos los derechos reservados |{" "}
-          <a
-            href="https://www.swipe.com.do"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline hover:text-slate-700 transition-colors"
-          >
-            www.swipe.com.do
-          </a>
-        </p>
-      </footer>
     </>
   )
 }

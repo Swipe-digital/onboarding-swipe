@@ -60,15 +60,34 @@ export default function OnboardingForm() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState<FormData>({
-    nombreCompleto: "", cargo: "", email: "", telefono: "",
-    nombreMarca: "", descripcion: "", misionVisionValores: "", elementoDiferenciador: "", personalidad: "", competidores: "",
-    objetivos: [], otroObjetivo: "", clienteIdeal: "", materialGrafico: "", presupuestoAds: "",
-    redesCreadas: "", socialMediaPlatforms: [],
-    instagramUser: "", instagramPassword: "",
-    facebookEmail: "", facebookPassword: "",
-    linkedinEmail: "", linkedinPassword: "",
-    horarioAtencion: "", direccion: "", whatsappClientes: "",
-    contactoAprobacion: "", comentarios: "",
+    nombreCompleto: "",
+    cargo: "",
+    email: "",
+    telefono: "",
+    nombreMarca: "",
+    descripcion: "",
+    misionVisionValores: "",
+    elementoDiferenciador: "",
+    personalidad: "",
+    competidores: "",
+    objetivos: [],
+    otroObjetivo: "",
+    clienteIdeal: "",
+    materialGrafico: "",
+    presupuestoAds: "",
+    redesCreadas: "",
+    socialMediaPlatforms: [],
+    instagramUser: "",
+    instagramPassword: "",
+    facebookEmail: "",
+    facebookPassword: "",
+    linkedinEmail: "",
+    linkedinPassword: "",
+    horarioAtencion: "",
+    direccion: "",
+    whatsappClientes: "",
+    contactoAprobacion: "",
+    comentarios: "",
   })
 
   const totalSteps = 5
@@ -83,7 +102,8 @@ export default function OnboardingForm() {
       const objetivos = prev.objetivos.includes(objective)
         ? prev.objetivos.filter((obj) => obj !== objective)
         : [...prev.objetivos, objective]
-      return { ...prev, objetivos }
+      const otroObjetivo = objective === "Otro" && prev.objetivos.includes("Otro") ? "" : prev.otroObjetivo
+      return { ...prev, objetivos, otroObjetivo }
     })
   }
 
@@ -97,95 +117,134 @@ export default function OnboardingForm() {
   }
 
   const validateStep = (step: number): boolean => {
-    if (step === 1) return !!(formData.nombreCompleto && formData.email && formData.telefono)
-    return true
+    switch (step) {
+      case 1:
+        return !!(formData.nombreCompleto && formData.cargo && formData.email && formData.telefono)
+      case 2:
+        return !!(formData.nombreMarca && formData.descripcion && formData.misionVisionValores && formData.elementoDiferenciador && formData.personalidad && formData.competidores)
+      case 3:
+        const otroSelected = formData.objetivos.includes("Otro")
+        const otroValid = !otroSelected || (otroSelected && formData.otroObjetivo.trim() !== "")
+        return !!(formData.objetivos.length > 0 && formData.clienteIdeal && formData.presupuestoAds && otroValid)
+      case 4:
+        return !!(formData.redesCreadas && formData.horarioAtencion)
+      case 5:
+        return !!formData.contactoAprobacion
+      default:
+        return false
+    }
   }
 
-  const handleNext = () => { if (validateStep(currentStep)) setCurrentStep((prev) => Math.min(prev + 1, totalSteps)) }
-  const handleBack = () => setCurrentStep((prev) => Math.max(prev - 1, 1))
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, totalSteps))
+    }
+  }
+
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1))
+  }
 
   const handleSubmit = async () => {
-    setIsLoading(true)
-    const portalId = "50931081"
-    const formId = "da6ea758-abbf-4c39-8b6e-822464977ebe"
-    
-    // Mapeo riguroso para evitar errores de validación en HubSpot
-    const payload = {
-      fields: [
-        { name: "firstname", value: formData.nombreCompleto || "No provisto" },
-        { name: "email", value: formData.email.trim().toLowerCase() },
-        { name: "phone", value: formData.telefono || "00000000" },
-        { name: "company", value: formData.nombreMarca || "Swipe Client" },
-        { name: "message", value: `
-          Cargo: ${formData.cargo}
-          ADN Marca: ${formData.descripcion}
-          Objetivos: ${formData.objetivos.join(", ")}
-          Presupuesto Ads: ${formData.presupuestoAds}
-          Redes: ${formData.socialMediaPlatforms.join(", ")}
-          Credenciales:
-          - IG: ${formData.instagramUser} / ${formData.instagramPassword}
-          - FB: ${formData.facebookEmail} / ${formData.facebookPassword}
-          - LI: ${formData.linkedinEmail} / ${formData.linkedinPassword}
-          Horario: ${formData.horarioAtencion}
-          Contacto Aprobación: ${formData.contactoAprobacion}
-        `.trim() }
-      ],
-      context: { pageUri: window.location.href, pageName: "Onboarding Swipe" }
-    }
+    if (validateStep(5)) {
+      setIsLoading(true)
+      const portalId = "50931081"
+      const formId = "da6ea758-abbf-4c39-8b6e-822464977ebe"
+      const url = `https://api.hsforms.com/submissions/v3/integration/submit/${portalId}/${formId}`
 
-    try {
-      const response = await fetch(`https://api.hsforms.com/submissions/v3/integration/submit/${portalId}/${formId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-      if (response.ok) setIsSubmitted(true)
-      else {
-        const errorDetail = await response.json()
-        console.error(errorDetail)
-        alert("Hubo un problema con los datos. Por favor revisa el formato del correo.")
+      const payload = {
+        fields: [
+          { name: "firstname", value: formData.nombreCompleto },
+          { name: "email", value: formData.email.trim().toLowerCase() },
+          { name: "phone", value: formData.telefono },
+          { name: "company", value: formData.nombreMarca },
+          { name: "message", value: `
+            CARGO: ${formData.cargo}
+            ADN MARCA: ${formData.descripcion}
+            MISIÓN/VISIÓN: ${formData.misionVisionValores}
+            DIFERENCIADOR: ${formData.elementoDiferenciador}
+            PERSONALIDAD: ${formData.personalidad}
+            COMPETIDORES: ${formData.competidores}
+            OBJETIVOS: ${formData.objetivos.join(", ")} ${formData.otroObjetivo}
+            CLIENTE IDEAL: ${formData.clienteIdeal}
+            PRESUPUESTO ADS: ${formData.presupuestoAds}
+            HORARIO: ${formData.horarioAtencion}
+            --- CREDENCIALES ---
+            INSTAGRAM: ${formData.instagramUser} / ${formData.instagramPassword}
+            FACEBOOK: ${formData.facebookEmail} / ${formData.facebookPassword}
+            LINKEDIN: ${formData.linkedinEmail} / ${formData.linkedinPassword}
+            CONTACTO APROBACIÓN: ${formData.contactoAprobacion}
+            COMENTARIOS: ${formData.comentarios}
+          `},
+        ],
+        context: {
+          pageUri: window.location.href,
+          pageName: document.title
+        }
       }
-    } catch (error) {
-      alert("Error de conexión.")
-    } finally { setIsLoading(false) }
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+
+        if (response.ok) {
+          setIsSubmitted(true)
+        } else {
+          alert("Error al enviar a HubSpot. Por favor revisa que el email sea válido.")
+        }
+      } catch (error) {
+        alert("Error de conexión.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
   }
 
-  const StepIcon = [User, Building2, Target, Globe, FileCheck][currentStep - 1]
+  const StepIcon = currentStep === 1 ? User : currentStep === 2 ? Building2 : currentStep === 3 ? Target : currentStep === 4 ? Globe : FileCheck
 
-  if (isSubmitted) return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-white">
-      <Card className="w-full max-w-2xl text-center p-12 border-slate-200 shadow-xl">
-        <CheckCircle2 className="w-16 h-16 text-blue-600 mx-auto mb-6" />
-        <h2 className="text-3xl font-bold">¡Todo listo!</h2>
-        <p className="text-slate-600 text-lg mt-4">Hemos recibido tu información. El equipo de Swipe se pondrá en contacto pronto.</p>
-      </Card>
-    </div>
-  )
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-white">
+        <Card className="w-full max-w-2xl border border-slate-200 shadow-lg text-center p-12">
+          <div className="flex justify-center mb-6">
+            <div className="rounded-full bg-blue-600 p-4">
+              <CheckCircle2 className="w-16 h-16 text-white" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold mb-4">¡Listo!</h2>
+          <p className="text-lg text-slate-600">Hemos recibido tu información. Pronto nos pondremos en contacto.</p>
+        </Card>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen py-10 px-4 bg-white text-slate-900">
+    <div className="min-h-screen py-8 px-4 bg-white">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
             <img src="/images/logotipo-principal.png" alt="Swipe Logo" className="max-h-[80px] w-auto object-contain" />
           </div>
-          <h1 className="text-4xl font-bold mb-3">🚀 Formulario de Onboarding</h1>
-          <p className="text-slate-600 max-w-2xl mx-auto">¡Hola! Bienvenido a la familia de Swipe. Completa este formulario para comenzar.</p>
+          <h1 className="text-4xl font-bold text-slate-900 mb-3">🚀 Formulario de Onboarding</h1>
+          <p className="text-slate-700 max-w-2xl mx-auto">¡Bienvenido a la familia Swipe!</p>
         </div>
 
         <div className="mb-8">
-          <div className="flex justify-between text-sm font-medium mb-2">
-            <span>Paso {currentStep} de 5</span>
-            <span>{progressPercentage}%</span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-slate-900">Paso {currentStep} de 5</span>
+            <span className="text-sm font-medium text-slate-900">{Math.round(progressPercentage)}%</span>
           </div>
           <Progress value={progressPercentage} className="h-2" />
         </div>
 
-        <Card className="border border-slate-200 shadow-lg bg-white rounded-xl overflow-hidden">
-          <CardHeader className="bg-blue-600 text-white p-6">
+        <Card className="border border-slate-200 shadow-lg rounded-xl bg-white">
+          <CardHeader className="rounded-t-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white">
             <div className="flex items-center gap-3">
-              <StepIcon className="w-6 h-6" />
-              <CardTitle className="text-2xl font-semibold">
+              <div className="bg-white/20 p-2 rounded-lg"><StepIcon className="w-6 h-6 text-white" /></div>
+              <CardTitle className="text-2xl">
                 {currentStep === 1 && "Datos de Identificación"}
                 {currentStep === 2 && "ADN de Marca"}
                 {currentStep === 3 && "Estrategia y Objetivos"}
@@ -195,93 +254,90 @@ export default function OnboardingForm() {
             </div>
           </CardHeader>
 
-          <CardContent className="p-8 space-y-6">
+          <CardContent className="pt-8 pb-6 space-y-6">
             {currentStep === 1 && (
               <div className="space-y-4">
                 <div className="space-y-2"><Label>Nombre completo *</Label><Input value={formData.nombreCompleto} onChange={e => updateFormData("nombreCompleto", e.target.value)} /></div>
-                <div className="space-y-2"><Label>Cargo en la empresa *</Label><Input value={formData.cargo} onChange={e => updateFormData("cargo", e.target.value)} /></div>
-                <div className="space-y-2"><Label>Correo electrónico *</Label><Input value={formData.email} onChange={e => updateFormData("email", e.target.value)} /></div>
-                <div className="space-y-2"><Label>Teléfono / WhatsApp *</Label><Input value={formData.telefono} onChange={e => updateFormData("telefono", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Cargo *</Label><Input value={formData.cargo} onChange={e => updateFormData("cargo", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Correo *</Label><Input type="email" value={formData.email} onChange={e => updateFormData("email", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Teléfono *</Label><Input value={formData.telefono} onChange={e => updateFormData("telefono", e.target.value)} /></div>
+              </div>
+            )}
+
+            {currentStep === 2 && (
+              <div className="space-y-4">
+                <div className="space-y-2"><Label>Nombre marca *</Label><Input value={formData.nombreMarca} onChange={e => updateFormData("nombreMarca", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Descripción *</Label><Textarea value={formData.descripcion} onChange={e => updateFormData("descripcion", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Misión/Visión/Valores *</Label><Textarea value={formData.misionVisionValores} onChange={e => updateFormData("misionVisionValores", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Diferenciador *</Label><Input value={formData.elementoDiferenciador} onChange={e => updateFormData("elementoDiferenciador", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Personalidad *</Label><Input value={formData.personalidad} onChange={e => updateFormData("personalidad", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Competidores *</Label><Input value={formData.competidores} onChange={e => updateFormData("competidores", e.target.value)} /></div>
+              </div>
+            )}
+
+            {currentStep === 3 && (
+              <div className="space-y-4">
+                <Label>Objetivos *</Label>
+                {["Más ventas", "Seguidores", "Posicionamiento", "Imagen visual", "Otro"].map(obj => (
+                  <div key={obj} className="flex items-center space-x-2">
+                    <Checkbox checked={formData.objetivos.includes(obj)} onCheckedChange={() => toggleObjective(obj)} />
+                    <Label>{obj}</Label>
+                  </div>
+                ))}
+                <div className="space-y-2"><Label>Cliente Ideal *</Label><Textarea value={formData.clienteIdeal} onChange={e => updateFormData("clienteIdeal", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Presupuesto Ads *</Label><Input value={formData.presupuestoAds} onChange={e => updateFormData("presupuestoAds", e.target.value)} /></div>
               </div>
             )}
 
             {currentStep === 4 && (
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <Label className="text-lg font-semibold text-slate-800">¿Redes sociales creadas? *</Label>
-                  <RadioGroup value={formData.redesCreadas} onValueChange={v => updateFormData("redesCreadas", v)} className="flex gap-4">
-                    <div className="flex items-center gap-2"><RadioGroupItem value="si" id="si" /><Label htmlFor="si">Sí</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="no" id="no" /><Label htmlFor="no">No</Label></div>
-                  </RadioGroup>
-                </div>
+              <div className="space-y-6">
+                <Label>¿Redes sociales creadas? *</Label>
+                <RadioGroup value={formData.redesCreadas} onValueChange={v => updateFormData("redesCreadas", v)}>
+                  <div className="flex items-center gap-2"><RadioGroupItem value="si" id="si" /><Label htmlFor="si">Sí</Label></div>
+                  <div className="flex items-center gap-2"><RadioGroupItem value="no" id="no" /><Label htmlFor="no">No</Label></div>
+                </RadioGroup>
 
-                <div className="flex justify-center gap-6 py-4">
-                  {[
-                    { id: "Instagram", icon: Instagram, color: "hover:border-purple-500", active: "border-purple-500 bg-purple-50" },
-                    { id: "Facebook", icon: Facebook, color: "hover:border-blue-600", active: "border-blue-600 bg-blue-50" },
-                    { id: "Linkedin", icon: Linkedin, color: "hover:border-blue-800", active: "border-blue-800 bg-blue-50" }
-                  ].map((plat) => (
-                    <button
-                      key={plat.id}
-                      type="button"
-                      onClick={() => toggleSocialPlatform(plat.id)}
-                      className={`p-5 rounded-2xl border-2 transition-all ${formData.socialMediaPlatforms.includes(plat.id) ? plat.active : "border-slate-100 bg-white"} ${plat.color}`}
-                    >
-                      <plat.icon className="w-8 h-8" />
-                    </button>
-                  ))}
+                <div className="flex gap-4 justify-center">
+                  <button type="button" onClick={() => toggleSocialPlatform("Instagram")} className={`p-4 rounded-xl border-2 ${formData.socialMediaPlatforms.includes("Instagram") ? "border-purple-500 bg-purple-50" : "border-slate-200"}`}><Instagram className="w-8 h-8" /></button>
+                  <button type="button" onClick={() => toggleSocialPlatform("Facebook")} className={`p-4 rounded-xl border-2 ${formData.socialMediaPlatforms.includes("Facebook") ? "border-blue-600 bg-blue-50" : "border-slate-200"}`}><Facebook className="w-8 h-8" /></button>
+                  <button type="button" onClick={() => toggleSocialPlatform("LinkedIn")} className={`p-4 rounded-xl border-2 ${formData.socialMediaPlatforms.includes("LinkedIn") ? "border-blue-800 bg-blue-50" : "border-slate-200"}`}><Linkedin className="w-8 h-8" /></button>
                 </div>
 
                 {formData.socialMediaPlatforms.includes("Instagram") && (
-                  <div className="p-6 bg-purple-50 rounded-xl grid grid-cols-2 gap-4 border border-purple-100">
-                    <div className="space-y-2"><Label>Usuario IG</Label><Input value={formData.instagramUser} onChange={e => updateFormData("instagramUser", e.target.value)} /></div>
-                    <div className="space-y-2"><Label>Password IG</Label><Input type="password" value={formData.instagramPassword} onChange={e => updateFormData("instagramPassword", e.target.value)} /></div>
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-purple-50 rounded-xl border border-purple-200">
+                    <Input placeholder="Usuario IG" value={formData.instagramUser} onChange={e => updateFormData("instagramUser", e.target.value)} />
+                    <Input placeholder="Clave IG" value={formData.instagramPassword} onChange={e => updateFormData("instagramPassword", e.target.value)} />
                   </div>
                 )}
                 {formData.socialMediaPlatforms.includes("Facebook") && (
-                  <div className="p-6 bg-blue-50 rounded-xl grid grid-cols-2 gap-4 border border-blue-100">
-                    <div className="space-y-2"><Label>Email FB</Label><Input value={formData.facebookEmail} onChange={e => updateFormData("facebookEmail", e.target.value)} /></div>
-                    <div className="space-y-2"><Label>Password FB</Label><Input type="password" value={formData.facebookPassword} onChange={e => updateFormData("facebookPassword", e.target.value)} /></div>
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                    <Input placeholder="Correo FB" value={formData.facebookEmail} onChange={e => updateFormData("facebookEmail", e.target.value)} />
+                    <Input placeholder="Clave FB" value={formData.facebookPassword} onChange={e => updateFormData("facebookPassword", e.target.value)} />
                   </div>
                 )}
-                {formData.socialMediaPlatforms.includes("Linkedin") && (
-                  <div className="p-6 bg-slate-50 rounded-xl grid grid-cols-2 gap-4 border border-slate-200">
-                    <div className="space-y-2"><Label>Usuario LinkedIn</Label><Input value={formData.linkedinEmail} onChange={e => updateFormData("linkedinEmail", e.target.value)} /></div>
-                    <div className="space-y-2"><Label>Password LinkedIn</Label><Input type="password" value={formData.linkedinPassword} onChange={e => updateFormData("linkedinPassword", e.target.value)} /></div>
+                {formData.socialMediaPlatforms.includes("LinkedIn") && (
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-xl border border-blue-300 text-blue-800">
+                    <Input placeholder="Correo LI" value={formData.linkedinEmail} onChange={e => updateFormData("linkedinEmail", e.target.value)} />
+                    <Input placeholder="Clave LI" value={formData.linkedinPassword} onChange={e => updateFormData("linkedinPassword", e.target.value)} />
                   </div>
                 )}
-                <div className="space-y-2"><Label>Horario de atención *</Label><Input value={formData.horarioAtencion} onChange={e => updateFormData("horarioAtencion", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Horario atención *</Label><Input value={formData.horarioAtencion} onChange={e => updateFormData("horarioAtencion", e.target.value)} /></div>
               </div>
             )}
 
-            {/* Pasos 2, 3 y 5 simplificados para el renderizado */}
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <div className="space-y-2"><Label>Nombre de marca</Label><Input value={formData.nombreMarca} onChange={e => updateFormData("nombreMarca", e.target.value)} /></div>
-                <div className="space-y-2"><Label>Descripción</Label><Textarea value={formData.descripcion} onChange={e => updateFormData("descripcion", e.target.value)} /></div>
-              </div>
-            )}
-            {currentStep === 3 && (
-              <div className="space-y-4">
-                <Label>Objetivos</Label>
-                {["Ventas", "Seguidores"].map(obj => (
-                  <div key={obj} className="flex gap-2"><Checkbox onCheckedChange={() => toggleObjective(obj)} /><Label>{obj}</Label></div>
-                ))}
-              </div>
-            )}
             {currentStep === 5 && (
               <div className="space-y-4">
-                <div className="space-y-2"><Label>Contacto aprobación</Label><Input value={formData.contactoAprobacion} onChange={e => updateFormData("contactoAprobacion", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Contacto aprobación *</Label><Input value={formData.contactoAprobacion} onChange={e => updateFormData("contactoAprobacion", e.target.value)} /></div>
                 <div className="space-y-2"><Label>Comentarios</Label><Textarea value={formData.comentarios} onChange={e => updateFormData("comentarios", e.target.value)} /></div>
               </div>
             )}
 
-            <div className="flex justify-between pt-10 border-t border-slate-100">
-              <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>Anterior</Button>
+            <div className="flex justify-between pt-6 border-t">
+              <Button variant="outline" onClick={handleBack} disabled={currentStep === 1 || isLoading}>Anterior</Button>
               {currentStep < 5 ? (
-                <Button onClick={handleNext} className="bg-blue-600 px-8 text-white">Siguiente</Button>
+                <Button onClick={handleNext} className="bg-blue-600 text-white px-8">Siguiente</Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={isLoading} className="bg-blue-600 px-8 text-white">
+                <Button onClick={handleSubmit} disabled={isLoading} className="bg-blue-600 text-white px-8">
                   {isLoading ? <Loader2 className="animate-spin" /> : "Finalizar Onboarding"}
                 </Button>
               )}

@@ -272,7 +272,7 @@ export default function OnboardingForm() {
           <div className="text-center mb-8">
             <div className="flex justify-center mb-6">
               <img
-                src="/icon.png"
+                src="/swipe-logo.png"
                 alt="Swipe Logo"
                 className="max-h-[80px] w-auto object-contain"
               />

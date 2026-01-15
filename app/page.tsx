@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import {
   ArrowLeft,
@@ -105,6 +105,9 @@ export default function OnboardingForm() {
     return true
   }
 
+  const handleNext = () => { if (validateStep(currentStep)) setCurrentStep(prev => prev + 1) }
+  const handleBack = () => setCurrentStep(prev => prev - 1)
+
   const handleSubmit = async () => {
     setIsLoading(true)
     const portalId = "50931081"
@@ -113,15 +116,19 @@ export default function OnboardingForm() {
     const payload = {
       fields: [
         { name: "firstname", value: formData.nombreCompleto },
-        { name: "email", value: formData.email },
+        { name: "email", value: formData.email.trim() },
         { name: "phone", value: formData.telefono },
         { name: "company", value: formData.nombreMarca },
         { name: "message", value: `
+          CARGO: ${formData.cargo}
+          ADN: ${formData.descripcion}
           OBJETIVOS: ${formData.objetivos.join(", ")}
-          INSTAGRAM: ${formData.instagramUser} / Pass: ${formData.instagramPassword}
-          FACEBOOK: ${formData.facebookEmail} / Pass: ${formData.facebookPassword}
-          LINKEDIN: ${formData.linkedinEmail} / Pass: ${formData.linkedinPassword}
           ADS: ${formData.presupuestoAds}
+          REDES: ${formData.socialMediaPlatforms.join(", ")}
+          IG: ${formData.instagramUser} / Pass: ${formData.instagramPassword}
+          FB: ${formData.facebookEmail} / Pass: ${formData.facebookPassword}
+          LI: ${formData.linkedinEmail} / Pass: ${formData.linkedinPassword}
+          APROBACIÓN: ${formData.contactoAprobacion}
           COMENTARIOS: ${formData.comentarios}
         `}
       ],
@@ -135,109 +142,147 @@ export default function OnboardingForm() {
         body: JSON.stringify(payload)
       })
       if (res.ok) setIsSubmitted(true)
-      else alert("Error al enviar. Revisa el formato del email.")
+      else alert("Error de envío. Verifica que el email sea válido.")
     } catch (e) { alert("Error de conexión.") }
     finally { setIsLoading(false) }
   }
 
+  const StepIcon = [User, Building2, Target, Globe, FileCheck][currentStep - 1]
+
   if (isSubmitted) return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4">
-      <Card className="max-w-md w-full text-center p-8 shadow-xl border-slate-100">
-        <CheckCircle2 className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold">¡Recibido!</h2>
-        <p className="text-slate-600 mt-2">Pronto nos pondremos en contacto contigo.</p>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-white">
+      <Card className="w-full max-w-2xl text-center p-12 shadow-xl border-slate-100">
+        <CheckCircle2 className="w-20 h-20 text-blue-600 mx-auto mb-6" />
+        <h2 className="text-3xl font-bold text-slate-900">¡Onboarding Completado!</h2>
+        <p className="text-lg text-slate-600 mt-4">Gracias por confiar en Swipe. Hemos recibido tu información correctamente.</p>
       </Card>
     </div>
   )
 
   return (
-    <div className="min-h-screen py-12 px-4 bg-slate-50/50">
+    <div className="min-h-screen py-10 px-4 bg-slate-50/30">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
-          <img src="/images/logotipo-principal.png" alt="Logo" className="max-h-20 mx-auto mb-6" />
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">🚀 Formulario de Onboarding</h1>
+          <img src="/images/logotipo-principal.png" alt="Swipe Logo" className="max-h-20 mx-auto mb-6" />
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">🚀 Formulario de Onboarding</h1>
+          <p className="text-slate-600 mt-3">¡Bienvenido a la familia Swipe! Completa los datos para comenzar.</p>
         </div>
 
         <div className="mb-8">
-            <Progress value={progressPercentage} className="h-2" />
+          <div className="flex justify-between text-sm font-bold mb-2">
+            <span>Paso {currentStep} de 5</span>
+            <span>{progressPercentage}%</span>
+          </div>
+          <Progress value={progressPercentage} className="h-2.5 bg-slate-200" />
         </div>
 
-        <Card className="shadow-2xl border-none overflow-hidden rounded-2xl bg-white">
+        <Card className="border-none shadow-2xl rounded-3xl overflow-hidden bg-white">
           <CardHeader className="bg-blue-600 text-white p-8">
-            <CardTitle className="text-2xl flex items-center gap-3">
-              {currentStep === 4 ? <Globe /> : <User />} Paso {currentStep}: 
-              {currentStep === 4 ? " Ecosistema Digital" : " Información"}
+            <CardTitle className="text-2xl flex items-center gap-4">
+              <StepIcon className="w-7 h-7" />
+              {currentStep === 1 && "Datos de Identificación"}
+              {currentStep === 2 && "ADN de Marca"}
+              {currentStep === 3 && "Estrategia y Objetivos"}
+              {currentStep === 4 && "Ecosistema Digital"}
+              {currentStep === 5 && "Cierre Operativo"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
+
+          <CardContent className="p-8 space-y-6">
             {currentStep === 1 && (
-                <div className="space-y-4">
-                    <div className="space-y-2"><Label>Nombre Completo *</Label><Input value={formData.nombreCompleto} onChange={e => updateFormData("nombreCompleto", e.target.value)} /></div>
-                    <div className="space-y-2"><Label>Correo Electrónico *</Label><Input value={formData.email} onChange={e => updateFormData("email", e.target.value)} /></div>
-                    <div className="space-y-2"><Label>WhatsApp *</Label><Input value={formData.telefono} onChange={e => updateFormData("telefono", e.target.value)} /></div>
+              <div className="space-y-4">
+                <div className="space-y-2"><Label>Nombre completo *</Label><Input value={formData.nombreCompleto} onChange={e => updateFormData("nombreCompleto", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Cargo en la empresa *</Label><Input value={formData.cargo} onChange={e => updateFormData("cargo", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Correo electrónico *</Label><Input type="email" value={formData.email} onChange={e => updateFormData("email", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Teléfono / WhatsApp *</Label><Input value={formData.telefono} onChange={e => updateFormData("telefono", e.target.value)} /></div>
+              </div>
+            )}
+
+            {currentStep === 2 && (
+              <div className="space-y-4">
+                <div className="space-y-2"><Label>Nombre de la marca *</Label><Input value={formData.nombreMarca} onChange={e => updateFormData("nombreMarca", e.target.value)} /></div>
+                <div className="space-y-2"><Label>¿Qué hace tu empresa? *</Label><Textarea value={formData.descripcion} onChange={e => updateFormData("descripcion", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Diferenciador principal</Label><Input value={formData.elementoDiferenciador} onChange={e => updateFormData("elementoDiferenciador", e.target.value)} /></div>
+              </div>
+            )}
+
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <Label className="text-base font-bold">Objetivos principales (Selecciona varios) *</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  {["Más Ventas", "Reconocimiento de Marca", "Seguidores", "Imagen Visual"].map(obj => (
+                    <div key={obj} className="flex items-center space-x-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50">
+                      <Checkbox checked={formData.objetivos.includes(obj)} onCheckedChange={() => toggleObjective(obj)} />
+                      <Label className="cursor-pointer">{obj}</Label>
+                    </div>
+                  ))}
                 </div>
+                <div className="space-y-2"><Label>Presupuesto mensual para Ads *</Label><Input placeholder="Ej: $500 USD" value={formData.presupuestoAds} onChange={e => updateFormData("presupuestoAds", e.target.value)} /></div>
+              </div>
             )}
 
             {currentStep === 4 && (
               <div className="space-y-8">
                 <div className="space-y-4">
-                  <Label className="text-lg font-semibold">¿Redes sociales creadas? *</Label>
-                  <RadioGroup value={formData.redesCreadas} onValueChange={v => updateFormData("redesCreadas", v)} className="flex gap-4">
-                    <div className="flex items-center gap-2"><RadioGroupItem value="si" id="si" /><Label htmlFor="si">Sí</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="no" id="no" /><Label htmlFor="no">No</Label></div>
+                  <Label className="text-lg font-bold">¿Tienes redes sociales creadas? *</Label>
+                  <RadioGroup value={formData.redesCreadas} onValueChange={v => updateFormData("redesCreadas", v)} className="flex gap-6">
+                    <div className="flex items-center gap-2"><RadioGroupItem value="si" id="si" /><Label htmlFor="si" className="text-lg">Sí</Label></div>
+                    <div className="flex items-center gap-2"><RadioGroupItem value="no" id="no" /><Label htmlFor="no" className="text-lg">No</Label></div>
                   </RadioGroup>
                 </div>
 
                 <div className="flex justify-center gap-6">
                   {[
-                    { id: "Instagram", icon: Instagram, color: "hover:border-purple-500", active: "border-purple-500 bg-purple-50" },
-                    { id: "Facebook", icon: Facebook, color: "hover:border-blue-600", active: "border-blue-600 bg-blue-50" },
-                    { id: "Linkedin", icon: Linkedin, color: "hover:border-blue-800", active: "border-blue-800 bg-blue-50" }
+                    { id: "Instagram", icon: Instagram, color: "hover:border-purple-500", active: "border-purple-500 bg-purple-50 text-purple-600" },
+                    { id: "Facebook", icon: Facebook, color: "hover:border-blue-600", active: "border-blue-600 bg-blue-50 text-blue-600" },
+                    { id: "Linkedin", icon: Linkedin, color: "hover:border-blue-800", active: "border-blue-800 bg-blue-50 text-blue-800" }
                   ].map((plat) => (
                     <button
-                      key={plat.id}
-                      type="button"
-                      onClick={() => toggleSocialPlatform(plat.id)}
-                      className={`p-6 rounded-2xl border-2 transition-all ${formData.socialMediaPlatforms.includes(plat.id) ? plat.active : "border-slate-100 bg-white"} ${plat.color}`}
+                      key={plat.id} type="button" onClick={() => toggleSocialPlatform(plat.id)}
+                      className={`p-6 rounded-2xl border-2 transition-all shadow-sm ${formData.socialMediaPlatforms.includes(plat.id) ? plat.active : "border-slate-100 bg-white text-slate-400"} ${plat.color}`}
                     >
-                      <plat.icon className="w-8 h-8" />
+                      <plat.icon className="w-9 h-9" />
                     </button>
                   ))}
                 </div>
 
                 {formData.socialMediaPlatforms.includes("Instagram") && (
-                  <div className="p-6 bg-purple-50 rounded-xl grid grid-cols-2 gap-4 border border-purple-100">
-                    <div className="space-y-2"><Label>Usuario IG</Label><Input value={formData.instagramUser} onChange={e => updateFormData("instagramUser", e.target.value)} /></div>
-                    <div className="space-y-2"><Label>Password IG</Label><Input type="password" value={formData.instagramPassword} onChange={e => updateFormData("instagramPassword", e.target.value)} /></div>
+                  <div className="p-6 bg-purple-50 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-4 border border-purple-100 animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-2"><Label>Usuario Instagram</Label><Input value={formData.instagramUser} onChange={e => updateFormData("instagramUser", e.target.value)} className="bg-white" /></div>
+                    <div className="space-y-2"><Label>Password Instagram</Label><Input type="password" value={formData.instagramPassword} onChange={e => updateFormData("instagramPassword", e.target.value)} className="bg-white" /></div>
                   </div>
                 )}
                 {formData.socialMediaPlatforms.includes("Facebook") && (
-                  <div className="p-6 bg-blue-50 rounded-xl grid grid-cols-2 gap-4 border border-blue-100">
-                    <div className="space-y-2"><Label>Correo FB</Label><Input value={formData.facebookEmail} onChange={e => updateFormData("facebookEmail", e.target.value)} /></div>
-                    <div className="space-y-2"><Label>Password FB</Label><Input type="password" value={formData.facebookPassword} onChange={e => updateFormData("facebookPassword", e.target.value)} /></div>
+                  <div className="p-6 bg-blue-50 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-4 border border-blue-100 animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-2"><Label>Email/Tel Facebook</Label><Input value={formData.facebookEmail} onChange={e => updateFormData("facebookEmail", e.target.value)} className="bg-white" /></div>
+                    <div className="space-y-2"><Label>Password Facebook</Label><Input type="password" value={formData.facebookPassword} onChange={e => updateFormData("facebookPassword", e.target.value)} className="bg-white" /></div>
                   </div>
                 )}
                 {formData.socialMediaPlatforms.includes("Linkedin") && (
-                  <div className="p-6 bg-slate-50 rounded-xl grid grid-cols-2 gap-4 border border-slate-200">
-                    <div className="space-y-2"><Label>Usuario LinkedIn</Label><Input value={formData.linkedinEmail} onChange={e => updateFormData("linkedinEmail", e.target.value)} /></div>
-                    <div className="space-y-2"><Label>Password LinkedIn</Label><Input type="password" value={formData.linkedinPassword} onChange={e => updateFormData("linkedinPassword", e.target.value)} /></div>
+                  <div className="p-6 bg-slate-100 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-4 border border-slate-200 animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-2"><Label>Usuario LinkedIn</Label><Input value={formData.linkedinEmail} onChange={e => updateFormData("linkedinEmail", e.target.value)} className="bg-white" /></div>
+                    <div className="space-y-2"><Label>Password LinkedIn</Label><Input type="password" value={formData.linkedinPassword} onChange={e => updateFormData("linkedinPassword", e.target.value)} className="bg-white" /></div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Renderizado simplificado para los otros pasos para ahorrar espacio en chat */}
-            {currentStep === 2 && <div className="space-y-4"><Label>Marca</Label><Input onChange={e => updateFormData("nombreMarca", e.target.value)} /></div>}
-            {currentStep === 3 && <div className="space-y-4"><Checkbox onCheckedChange={() => toggleObjective("Ventas")} /><Label>Ventas</Label></div>}
-            {currentStep === 5 && <div className="space-y-4"><Label>Aprobación</Label><Input onChange={e => updateFormData("contactoAprobacion", e.target.value)} /></div>}
+            {currentStep === 5 && (
+              <div className="space-y-4">
+                <div className="space-y-2"><Label>Contacto para aprobación de contenido *</Label><Input value={formData.contactoAprobacion} onChange={e => updateFormData("contactoAprobacion", e.target.value)} /></div>
+                <div className="space-y-2"><Label>Comentarios adicionales</Label><Textarea value={formData.comentarios} onChange={e => updateFormData("comentarios", e.target.value)} /></div>
+              </div>
+            )}
 
-            <div className="flex justify-between mt-12 pt-6 border-t border-slate-100">
-              <Button variant="ghost" onClick={() => setCurrentStep(s => s - 1)} disabled={currentStep === 1}>Anterior</Button>
+            <div className="flex justify-between pt-10 border-t border-slate-100">
+              <Button variant="outline" onClick={handleBack} disabled={currentStep === 1} className="rounded-xl px-8 h-12">Anterior</Button>
               {currentStep < 5 ? (
-                <Button onClick={() => setCurrentStep(s => s + 1)} className="bg-blue-600 px-10 rounded-xl">Siguiente</Button>
+                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-10 h-12 font-bold shadow-lg shadow-blue-200">
+                  Siguiente <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={isLoading} className="bg-blue-600 px-10 rounded-xl">
-                  {isLoading ? <Loader2 className="animate-spin" /> : "Finalizar"}
+                <Button onClick={handleSubmit} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-12 h-12 font-bold shadow-lg shadow-blue-200">
+                  {isLoading ? <Loader2 className="animate-spin" /> : "Finalizar Onboarding"}
                 </Button>
               )}
             </div>

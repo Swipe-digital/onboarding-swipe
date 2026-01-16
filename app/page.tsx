@@ -183,10 +183,14 @@ export default function OnboardingForm() {
 
     setIsSubmitted(true)
   } catch (error) {
-    console.error("🔴 Submit error:", error)
-    alert("Hubo un error enviando el formulario. Intenta nuevamente.")
-  }
+  console.error("ERROR SUBMIT:", error)
+  alert(
+    error instanceof Error
+      ? error.message
+      : "Error desconocido"
+  )
 }
+
 
 
   const getStepIcon = (step: number) => {

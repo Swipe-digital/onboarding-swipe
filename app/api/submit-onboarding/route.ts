@@ -1,37 +1,72 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 
 export async function POST(req: Request) {
   try {
     const data = await req.json();
 
-    console.log("📩 Nueva información recibida:", data);
+    const response = await fetch(
+      `https://api.clickup.com/api/v2/list/${process.env.CLICKUP_LIST_ID}/task`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": process.env.CLICKUP_TOKEN!,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: `Onboarding – ${data.nombreMarca}`,
+          description: `
+📌 **DATOS DE CONTACTO**
+Nombre: ${data.nombreCompleto}
+Cargo: ${data.cargo}
+Email: ${data.email}
+Teléfono: ${data.telefono}
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+🏷 **MARCA**
+Nombre: ${data.nombreMarca}
+Descripción: ${data.descripcion}
+Diferenciador: ${data.elementoDiferenciador}
+Personalidad: ${data.personalidad}
 
-    await transporter.sendMail({
-      from: `"Onboarding Swipe" <${process.env.EMAIL_USER}>`,
-      to: process.env.RECEIVER_EMAIL || process.env.EMAIL_USER,
-      subject: "🧾 Nuevo formulario de onboarding",
-      html: `
-        <h2>Nuevo onboarding recibido</h2>
-        <pre style="font-family: monospace; background:#f4f4f4; padding:16px; border-radius:8px;">
-${JSON.stringify(data, null, 2)}
-        </pre>
-      `,
-    });
+🎯 **OBJETIVOS**
+${data.objetivos?.join(", ")}
+Otro objetivo: ${data.otroObjetivo}
+
+👤 **CLIENTE IDEAL**
+${data.clienteIdeal}
+
+💰 **PRESUPUESTO ADS**
+${data.presupuestoAds}
+
+📱 **REDES**
+Instagram: ${data.instagramUser}
+Facebook: ${data.facebookEmail}
+LinkedIn: ${data.linkedinEmail}
+
+⏰ **OPERATIVO**
+Horario: ${data.horarioAtencion}
+Dirección: ${data.direccion}
+WhatsApp: ${data.whatsappClientes}
+Contacto aprobación: ${data.contactoAprobacion}
+
+📝 **COMENTARIOS**
+${data.comentarios}
+          `,
+          priority: 3,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("❌ ClickUp error:", error);
+      throw new Error("Error creando tarea en ClickUp");
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("❌ Error enviando email:", error);
+    console.error("❌ Error:", error);
     return NextResponse.json(
-      { success: false, error: "Error enviando formulario" },
+      { success: false, error: "Error enviando a ClickUp" },
       { status: 500 }
     );
   }

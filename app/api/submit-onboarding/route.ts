@@ -3,62 +3,51 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-
-    console.log("📩 Nueva info recibida (ClickUp):", data);
-
-    // Limpiamos los valores para evitar espacios en blanco accidentales
+    
+    // 1. Limpieza y Debugging
     const CLICKUP_API_KEY = process.env.CLICKUP_API_KEY?.trim();
     const CLICKUP_LIST_ID = process.env.CLICKUP_LIST_ID?.trim();
 
+    console.log("DEBUG - Key presente:", !!CLICKUP_API_KEY);
+    console.log("DEBUG - List ID:", CLICKUP_LIST_ID);
+
     if (!CLICKUP_API_KEY || !CLICKUP_LIST_ID) {
-      console.error("❌ Error: Variables de entorno no configuradas en Vercel");
       return NextResponse.json(
-        { success: false, error: "Configuración de ClickUp incompleta en el servidor" },
+        { success: false, error: "Faltan variables de entorno en Vercel" },
         { status: 500 }
       );
     }
 
+    // 2. Llamada a ClickUp
     const response = await fetch(
       `https://api.clickup.com/api/v2/list/${CLICKUP_LIST_ID}/task`,
       {
         method: "POST",
         headers: {
-          "Authorization": CLICKUP_API_KEY,
+          "Authorization": CLICKUP_API_KEY, // Ya probamos que 'pk_...' funciona así en curl
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: `🧾 Onboarding - ${data.nombreMarca || "Nueva Marca"}`,
-          // La descripción incluye un bloque de código JSON para que sea legible en ClickUp
-          description: "Datos recibidos del formulario:\n\n```json\n" + JSON.stringify(data, null, 2) + "\n```",
+          name: `🧾 Onboarding - ${data.nombreMarca || "Sin Nombre"}`,
+          description: "```json\n" + JSON.stringify(data, null, 2) + "\n```",
         }),
       }
     );
 
+    const result = await response.json();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Error detallado de ClickUp:", errorText);
+      console.error("❌ ClickUp Error:", result);
       return NextResponse.json(
-        { success: false, error: `ClickUp respondió con error ${response.status}: ${errorText}` },
+        { success: false, error: result.err || "Error en ClickUp" },
         { status: response.status }
       );
     }
 
-    const clickupResponse = await response.json();
-    console.log("✅ Tarea creada exitosamente en ClickUp ID:", clickupResponse.id);
-
-    return NextResponse.json({ 
-      success: true, 
-      taskId: clickupResponse.id 
-    });
+    return NextResponse.json({ success: true, taskId: result.id });
 
   } catch (error) {
-    console.error("❌ Error crítico en la ruta API:", error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : "Error interno del servidor" 
-      },
-      { status: 500 }
-    );
+    console.error("❌ Error Crítico:", error);
+    return NextResponse.json({ success: false, error: "Error interno" }, { status: 500 });
   }
 }

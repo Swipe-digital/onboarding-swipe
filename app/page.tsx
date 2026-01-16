@@ -159,7 +159,7 @@ export default function OnboardingForm() {
   if (!validateStep(5)) return
 
   try {
-    const response = await fetch("/.netlify/functions/submit-onboarding", {
+    const response = await fetch("/api/submit-onboarding", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -155,7 +155,12 @@ export default function OnboardingForm() {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+
+  console.log("🟡 Submit presionado")
+  console.log("📦 Data a enviar:", formData)
+
   if (!validateStep(5)) return
 
   try {
@@ -167,13 +172,18 @@ export default function OnboardingForm() {
       body: JSON.stringify(formData),
     })
 
+    console.log("🟢 Response status:", response.status)
+
+    const data = await response.json()
+    console.log("🟢 Response body:", data)
+
     if (!response.ok) {
       throw new Error("Error al enviar el formulario")
     }
 
     setIsSubmitted(true)
   } catch (error) {
-    console.error("Submit error:", error)
+    console.error("🔴 Submit error:", error)
     alert("Hubo un error enviando el formulario. Intenta nuevamente.")
   }
 }
@@ -290,6 +300,7 @@ export default function OnboardingForm() {
             </CardHeader>
 
             <CardContent className="pt-8 pb-6">
+  <form onSubmit={handleSubmit}>
               {/* Step 1: Datos de Identificación */}
               {currentStep === 1 && (
                 <div className="space-y-6">
@@ -804,6 +815,7 @@ export default function OnboardingForm() {
               {/* Navigation Buttons */}
               <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
                 <Button
+                type="button"
                   onClick={handleBack}
                   disabled={currentStep === 1}
                   variant="outline"
@@ -815,6 +827,7 @@ export default function OnboardingForm() {
 
                 {currentStep < totalSteps ? (
                   <Button
+                  type="button"
                     onClick={handleNext}
                     disabled={!validateStep(currentStep)}
                     className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
@@ -824,7 +837,7 @@ export default function OnboardingForm() {
                   </Button>
                 ) : (
                   <Button
-                    onClick={handleSubmit}
+                    type="submit"
                     disabled={!validateStep(5)}
                     className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
                   >
@@ -833,6 +846,7 @@ export default function OnboardingForm() {
                   </Button>
                 )}
               </div>
+              </form>
             </CardContent>
           </Card>
         </div>

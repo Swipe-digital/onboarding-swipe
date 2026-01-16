@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { Resend } from 'resend';
+
+// Inicializamos Resend con la variable de entorno
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
@@ -11,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Configuración incompleta" }, { status: 500 });
     }
 
-    // Formato limpio con Emojis y sin símbolos de Markdown
+    // 1. Preparamos la descripción para ClickUp (con emojis)
     const formattedDescription = `
 📝 NUEVO ONBOARDING: ${data.nombreMarca?.toUpperCase()}
 
@@ -50,7 +54,8 @@ Contacto Aprobación: ${data.contactoAprobacion}
 ${data.comentarios || "Sin comentarios adicionales"}
     `.trim();
 
-    const response = await fetch(
+    // 2. Ejecutamos el envío a ClickUp
+    const clickupResponse = await fetch(
       `https://api.clickup.com/api/v2/list/${CLICKUP_LIST_ID}/task`,
       {
         method: "POST",
@@ -65,15 +70,30 @@ ${data.comentarios || "Sin comentarios adicionales"}
       }
     );
 
-    const result = await response.json();
+    const clickupResult = await clickupResponse.json();
 
-    if (!response.ok) {
-      return NextResponse.json({ success: false, error: result.err }, { status: response.status });
+    // 3. Enviamos el correo (Formato JSON igual a tu captura de pantalla)
+    // Se ejecuta independientemente de si ClickUp falló o no
+    try {
+      await resend.emails.send({
+        from: 'Onboarding <onboarding@resend.dev>',
+        to: ['control.swipe@gmail.com'],
+        subject: `Nuevo formulario de onboarding: ${data.nombreMarca}`,
+        text: JSON.stringify(data, null, 2), // El formato exacto de tu captura
+      });
+    } catch (mailError) {
+      console.error("Error enviando email:", mailError);
+      // No bloqueamos la respuesta si solo falla el correo
     }
 
-    return NextResponse.json({ success: true, taskId: result.id });
+    if (!clickupResponse.ok) {
+      return NextResponse.json({ success: false, error: clickupResult.err }, { status: clickupResponse.status });
+    }
+
+    return NextResponse.json({ success: true, taskId: clickupResult.id });
 
   } catch (error) {
+    console.error("Error interno:", error);
     return NextResponse.json({ success: false, error: "Error interno" }, { status: 500 });
   }
 }

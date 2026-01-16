@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Configuración incompleta" }, { status: 500 });
     }
 
-    // 1. Preparamos la descripción para ClickUp (con emojis)
+    // 1. Formato para ClickUp (Texto enriquecido con emojis)
     const formattedDescription = `
 📝 NUEVO ONBOARDING: ${data.nombreMarca?.toUpperCase()}
 
@@ -54,7 +54,7 @@ Contacto Aprobación: ${data.contactoAprobacion}
 ${data.comentarios || "Sin comentarios adicionales"}
     `.trim();
 
-    // 2. Ejecutamos el envío a ClickUp
+    // 2. Ejecutar envío a ClickUp
     const clickupResponse = await fetch(
       `https://api.clickup.com/api/v2/list/${CLICKUP_LIST_ID}/task`,
       {
@@ -72,18 +72,39 @@ ${data.comentarios || "Sin comentarios adicionales"}
 
     const clickupResult = await clickupResponse.json();
 
-    // 3. Enviamos el correo (Formato JSON igual a tu captura de pantalla)
-    // Se ejecuta independientemente de si ClickUp falló o no
+    // 3. Enviar el Correo (Formato HTML Profesional)
     try {
       await resend.emails.send({
         from: 'Onboarding <onboarding@resend.dev>',
         to: ['control.swipe@gmail.com'],
-        subject: `Nuevo formulario de onboarding: ${data.nombreMarca}`,
-        text: JSON.stringify(data, null, 2), // El formato exacto de tu captura
+        subject: `🚀 Nuevo Onboarding: ${data.nombreMarca}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+            <h2 style="color: #1a1a1a; border-bottom: 2px solid #333; padding-bottom: 10px;">🧾 Nuevo Onboarding Recibido</h2>
+            <p style="font-size: 16px;">Se ha registrado una nueva entrada para la marca: <strong>${data.nombreMarca}</strong></p>
+            
+            <h3 style="background: #f4f4f4; padding: 5px 10px;">👤 Contacto</h3>
+            <p><strong>Nombre:</strong> ${data.nombreCompleto}<br>
+               <strong>Email:</strong> ${data.email}<br>
+               <strong>Teléfono:</strong> ${data.telefono}</p>
+
+            <h3 style="background: #f4f4f4; padding: 5px 10px;">🚀 Marca y Estrategia</h3>
+            <p><strong>Descripción:</strong> ${data.descripcion}<br>
+               <strong>Diferenciador:</strong> ${data.elementoDiferenciador}<br>
+               <strong>Objetivos:</strong> ${data.objetivos?.join(", ") || "No definidos"}</p>
+
+            <h3 style="background: #f4f4f4; padding: 5px 10px;">🔐 Accesos</h3>
+            <p>${data.instagramUser ? `📸 <strong>Instagram:</strong> ${data.instagramUser} / ${data.instagramPassword}<br>` : ""}
+               ${data.facebookEmail ? `🔵 <strong>Facebook:</strong> ${data.facebookEmail} / ${data.facebookPassword}<br>` : ""}</p>
+
+            <div style="margin-top: 20px; padding: 10px; border-left: 4px solid #333; font-style: italic;">
+              <strong>Comentarios:</strong> ${data.comentarios || "Sin comentarios."}
+            </div>
+          </div>
+        `,
       });
     } catch (mailError) {
       console.error("Error enviando email:", mailError);
-      // No bloqueamos la respuesta si solo falla el correo
     }
 
     if (!clickupResponse.ok) {

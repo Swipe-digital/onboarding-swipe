@@ -4,67 +4,35 @@ export async function POST(req: Request) {
   try {
     const data = await req.json();
 
+    console.log("📩 Nueva info recibida (ClickUp):", data);
+
+    const CLICKUP_API_KEY = process.env.CLICKUP_API_KEY!;
+    const CLICKUP_LIST_ID = process.env.CLICKUP_LIST_ID!;
+
     const response = await fetch(
-      `https://api.clickup.com/api/v2/list/${process.env.CLICKUP_LIST_ID}/task`,
+      `https://api.clickup.com/api/v2/list/${CLICKUP_LIST_ID}/task`,
       {
         method: "POST",
         headers: {
-          "Authorization": process.env.CLICKUP_TOKEN!,
+          "Authorization": CLICKUP_API_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: `Onboarding – ${data.nombreMarca}`,
-          description: `
-📌 **DATOS DE CONTACTO**
-Nombre: ${data.nombreCompleto}
-Cargo: ${data.cargo}
-Email: ${data.email}
-Teléfono: ${data.telefono}
-
-🏷 **MARCA**
-Nombre: ${data.nombreMarca}
-Descripción: ${data.descripcion}
-Diferenciador: ${data.elementoDiferenciador}
-Personalidad: ${data.personalidad}
-
-🎯 **OBJETIVOS**
-${data.objetivos?.join(", ")}
-Otro objetivo: ${data.otroObjetivo}
-
-👤 **CLIENTE IDEAL**
-${data.clienteIdeal}
-
-💰 **PRESUPUESTO ADS**
-${data.presupuestoAds}
-
-📱 **REDES**
-Instagram: ${data.instagramUser}
-Facebook: ${data.facebookEmail}
-LinkedIn: ${data.linkedinEmail}
-
-⏰ **OPERATIVO**
-Horario: ${data.horarioAtencion}
-Dirección: ${data.direccion}
-WhatsApp: ${data.whatsappClientes}
-Contacto aprobación: ${data.contactoAprobacion}
-
-📝 **COMENTARIOS**
-${data.comentarios}
-          `,
-          priority: 3,
+          name: `🧾 Onboarding - ${data.nombreMarca}`,
+          description: "```json\n" + JSON.stringify(data, null, 2) + "\n```",
         }),
       }
     );
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("❌ ClickUp error:", error);
+      const errorText = await response.text();
+      console.error("❌ Error ClickUp:", errorText);
       throw new Error("Error creando tarea en ClickUp");
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("❌ Error:", error);
+    console.error("❌ Error general:", error);
     return NextResponse.json(
       { success: false, error: "Error enviando a ClickUp" },
       { status: 500 }

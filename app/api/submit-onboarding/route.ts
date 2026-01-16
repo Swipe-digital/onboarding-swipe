@@ -11,43 +11,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Configuración incompleta" }, { status: 500 });
     }
 
-    // Creamos una descripción visualmente atractiva con Markdown
+    // Formato limpio con Emojis y sin símbolos de Markdown
     const formattedDescription = `
-# 📝 NUEVO ONBOARDING: ${data.nombreMarca}
+📝 NUEVO ONBOARDING: ${data.nombreMarca?.toUpperCase()}
 
-### 👤 Información de Contacto
-* **Nombre:** ${data.nombreCompleto}
-* **Cargo:** ${data.cargo}
-* **Email:** ${data.email}
-* **Teléfono:** ${data.telefono}
+👤 INFORMACIÓN DE CONTACTO
+Nombre: ${data.nombreCompleto}
+Cargo: ${data.cargo}
+Email: ${data.email}
+Teléfono: ${data.telefono}
 
-### 🚀 Detalles de la Marca
-* **Descripción:** ${data.descripcion}
-* **Misión/Visión/Valores:** ${data.misionVisionValores}
-* **Diferenciador:** ${data.elementoDiferenciador}
-* **Personalidad:** ${data.personalidad}
-* **Competidores:** ${data.competidores}
+🚀 DETALLES DE LA MARCA
+Descripción: ${data.descripcion}
+Misión, Visión y Valores: ${data.misionVisionValores}
+Diferenciador: ${data.elementoDiferenciador}
+Personalidad: ${data.personalidad}
+Competidores: ${data.competidores}
 
-### 🎯 Objetivos y Cliente
-* **Objetivos:** ${data.objetivos?.join(", ") || "No especificados"} ${data.otroObjetivo ? `(${data.otroObjetivo})` : ""}
-* **Cliente Ideal:** ${data.clienteIdeal}
-* **Presupuesto Ads:** ${data.presupuestoAds}
+🎯 OBJETIVOS Y CLIENTE
+Objetivos: ${data.objetivos?.join(", ") || "No especificados"} ${data.otroObjetivo ? `(${data.otroObjetivo})` : ""}
+Cliente Ideal: ${data.clienteIdeal}
+Presupuesto Ads: ${data.presupuestoAds}
 
-### 🔐 Accesos y Redes Sociales
-* **Redes creadas:** ${data.redesCreadas}
-* **Plataformas:** ${data.socialMediaPlatforms?.join(", ") || "Ninguna"}
-${data.instagramUser ? `* **Instagram:** User: ${data.instagramUser} / Pass: ${data.instagramPassword}` : ""}
-${data.facebookEmail ? `* **Facebook:** Email: ${data.facebookEmail} / Pass: ${data.facebookPassword}` : ""}
+🔐 ACCESOS Y REDES SOCIALES
+Redes creadas: ${data.redesCreadas}
+Plataformas: ${data.socialMediaPlatforms?.join(", ") || "Ninguna"}
+${data.instagramUser ? `📸 Instagram: User: ${data.instagramUser} / Pass: ${data.instagramPassword}` : ""}
+${data.facebookEmail ? `🔵 Facebook: Email: ${data.facebookEmail} / Pass: ${data.facebookPassword}` : ""}
+${data.linkedinEmail ? `💼 LinkedIn: Email: ${data.linkedinEmail} / Pass: ${data.linkedinPassword}` : ""}
 
-### 📍 Información Operativa
-* **Horario:** ${data.horarioAtencion}
-* **Dirección:** ${data.direccion}
-* **WhatsApp Clientes:** ${data.whatsappClientes}
-* **Contacto Aprobación:** ${data.contactoAprobacion}
+📍 INFORMACIÓN OPERATIVA
+Horario: ${data.horarioAtencion}
+Dirección: ${data.direccion}
+WhatsApp Clientes: ${data.whatsappClientes}
+Contacto Aprobación: ${data.contactoAprobacion}
 
----
-**Comentarios adicionales:**
-${data.comentarios || "Sin comentarios"}
+💬 COMENTARIOS ADICIONALES
+${data.comentarios || "Sin comentarios adicionales"}
     `.trim();
 
     const response = await fetch(
@@ -61,8 +61,6 @@ ${data.comentarios || "Sin comentarios"}
         body: JSON.stringify({
           name: `🧾 Onboarding - ${data.nombreMarca}`,
           description: formattedDescription,
-          priority: 2, // 2 es "High" en ClickUp
-          status: "to do"
         }),
       }
     );

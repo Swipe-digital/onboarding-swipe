@@ -3,22 +3,19 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    
-    // 1. Inyectamos el Token directamente para saltar errores de Vercel
-    const CLICKUP_API_KEY = "pk_95276765_BUA3MJU1U5861NMGCPKK2UZR8PTZ0ZL7"; 
-    const CLICKUP_LIST_ID = process.env.CLICKUP_LIST_ID?.trim() || "901709753163";
 
-    console.log("🚀 Intentando enviar a ClickUp con Token Directo...");
-    console.log("📍 List ID utilizado:", CLICKUP_LIST_ID);
+    // Leemos las variables de forma segura desde el entorno
+    const CLICKUP_API_KEY = process.env.CLICKUP_API_KEY?.trim();
+    const CLICKUP_LIST_ID = process.env.CLICKUP_LIST_ID?.trim();
 
     if (!CLICKUP_API_KEY || !CLICKUP_LIST_ID) {
+      console.error("❌ Error: Variables de entorno no configuradas en Vercel");
       return NextResponse.json(
-        { success: false, error: "Configuración incompleta" },
+        { success: false, error: "Configuración incompleta en el servidor" },
         { status: 500 }
       );
     }
 
-    // 2. Llamada a ClickUp
     const response = await fetch(
       `https://api.clickup.com/api/v2/list/${CLICKUP_LIST_ID}/task`,
       {
@@ -28,7 +25,7 @@ export async function POST(req: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: `🧾 Onboarding - ${data.nombreMarca || "Sin Nombre"}`,
+          name: `🧾 Onboarding - ${data.nombreMarca || "Nueva Marca"}`,
           description: "Datos del formulario:\n\n```json\n" + JSON.stringify(data, null, 2) + "\n```",
         }),
       }
@@ -37,21 +34,20 @@ export async function POST(req: Request) {
     const result = await response.json();
 
     if (!response.ok) {
-      console.error("❌ ClickUp Error detallado:", result);
+      console.error("❌ ClickUp Error:", result);
       return NextResponse.json(
-        { success: false, error: result.err || "Error en ClickUp", status: response.status },
+        { success: false, error: result.err || "Error en ClickUp" },
         { status: response.status }
       );
     }
 
-    console.log("✅ Tarea creada con éxito ID:", result.id);
     return NextResponse.json({ success: true, taskId: result.id });
 
   } catch (error) {
-    console.error("❌ Error Crítico en el Servidor:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : "Error interno" 
-    }, { status: 500 });
+    console.error("❌ Error crítico:", error);
+    return NextResponse.json(
+      { success: false, error: "Error interno del servidor" },
+      { status: 500 }
+    );
   }
 }

@@ -155,12 +155,29 @@ export default function OnboardingForm() {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleSubmit = () => {
-    if (validateStep(5)) {
-      console.log("Form submitted:", formData)
-      setIsSubmitted(true)
+  const handleSubmit = async () => {
+  if (!validateStep(5)) return
+
+  try {
+    const response = await fetch("/.netlify/functions/submit-onboarding", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+
+    if (!response.ok) {
+      throw new Error("Error al enviar el formulario")
     }
+
+    setIsSubmitted(true)
+  } catch (error) {
+    console.error("Submit error:", error)
+    alert("Hubo un error enviando el formulario. Intenta nuevamente.")
   }
+}
+
 
   const getStepIcon = (step: number) => {
     switch (step) {

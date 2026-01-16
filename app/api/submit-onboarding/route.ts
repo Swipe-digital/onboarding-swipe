@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     
     // 1. Inyectamos el Token directamente para saltar errores de Vercel
     const CLICKUP_API_KEY = "pk_95276765_BUA3MJU1U5861NMGCPKK2UZR8PTZ0ZL7"; 
-    const CLICKUP_LIST_ID = process.env.CLICKUP_LIST_ID?.trim() || "9017676681";
+    const CLICKUP_LIST_ID = process.env.CLICKUP_LIST_ID?.trim() || "901709753163";
 
     console.log("🚀 Intentando enviar a ClickUp con Token Directo...");
     console.log("📍 List ID utilizado:", CLICKUP_LIST_ID);

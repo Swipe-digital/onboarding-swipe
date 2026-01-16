@@ -15,14 +15,17 @@ export async function POST(req: Request) {
       },
     });
 
-    const mailOptions = {
+    await transporter.sendMail({
       from: `"Onboarding Swipe" <${process.env.EMAIL_USER}>`,
-      to: process.env.RECEIVER_EMAIL,
+      to: process.env.RECEIVER_EMAIL || process.env.EMAIL_USER,
       subject: "🧾 Nuevo formulario de onboarding",
-      text: JSON.stringify(data, null, 2),
-    };
-
-    await transporter.sendMail(mailOptions);
+      html: `
+        <h2>Nuevo onboarding recibido</h2>
+        <pre style="font-family: monospace; background:#f4f4f4; padding:16px; border-radius:8px;">
+${JSON.stringify(data, null, 2)}
+        </pre>
+      `,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
